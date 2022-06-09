@@ -1,0 +1,56 @@
+version: '3.9'
+
+services:
+  nfs-startup:
+    image: ${IMAGE_NAME:-alpine}:${IMAGE_TAG:-latest}
+    entrypoint: sh -c
+    command:
+      - >
+        for directoryDefinition in ${NFS_STARTUP_DIRS};
+        do
+          directoryName=$$(echo "$${directoryDefinition}" | cut -d ':' -f 1);
+          directoryUid=$$(echo "$${directoryDefinition}:" | cut -d ':' -f 2);
+          directoryGid=$$(echo "$${directoryDefinition}:" | cut -d ':' -f 3);
+          directoryPath=${NFS_ROOT_PATH}/$${directoryName};
+          mkdir -p $${directoryPath};
+          if [ ! -z $${directoryUid} ];
+          then
+            chown $${directoryUid} $${directoryPath};
+          fi;
+          if [ ! -z $${directoryGid} ];
+          then
+            chgrp $${directoryGid} $${directoryPath};
+          fi;
+        done
+    networks:
+      nfs-net:
+    volumes:
+      - nfs-vol:${NFS_ROOT_PATH}
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: ${RESTART_DELAY:-10s}
+      resources:
+        limits:
+          cpus: '${RESOURCES_LIMITS_CPUS:-0.1}'
+          memory: ${RESOURCES_LIMITS_MEMORY:-16M}
+        reservations:
+          cpus: '${RESOURCES_RESERVATIONS_CPUS:-0.001}'
+          memory: ${RESOURCES_RESERVATIONS_MEMORY:-6M}
+
+networks:
+  nfs-net:
+    name: ${NFS_NET_NAME:-nfs-net}
+    driver: ${NFS_NET_DRIVER:-overlay}
+    attachable: ${NFS_NET_ATTACHABLE:-true}
+
+volumes:
+  nfs-vol:
+    name: ${NFS_VOL_NAME:-nfs-startup-vol}
+    driver: local
+    driver_opts:
+      type: ${VOL_TYPE:-nfs4}
+      o: addr=${VOL_ADDR:-127.0.0.1},${VOL_OPTS:-rw,nolock,noatime,tcp,rsize=8192,wsize=8192,timeo=14}
+      device: ${NFS_VOL_DEVICE:-:/}
