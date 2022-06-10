@@ -6,22 +6,41 @@ services:
     entrypoint: sh -c
     command:
       - >
-        for directoryDefinition in ${NFS_STARTUP_DIRS};
+        echo "NFS startup";
+        echo "Populating at \"$${NFS_ROOT_PATH}\"";
+        for directoryDefinition in $${NFS_STARTUP_DIRS};
         do
           directoryName=$$(echo "$${directoryDefinition}" | cut -d ':' -f 1);
           directoryUid=$$(echo "$${directoryDefinition}:" | cut -d ':' -f 2);
           directoryGid=$$(echo "$${directoryDefinition}:" | cut -d ':' -f 3);
-          directoryPath=${NFS_ROOT_PATH}/$${directoryName};
+          directoryPath=$${NFS_ROOT_PATH}/$${directoryName};
+          echo "Creating \"$${directoryName}\" ..";
+          if [ -d $${directoryPath} ];
+          then
+            echo "  already exists!";
+          fi;
           mkdir -p $${directoryPath};
+          if [ -d $${directoryPath} ];
+          then
+            echo "  successfully created!";
+          else
+            echo "  creation failed!";
+          fi;
           if [ ! -z $${directoryUid} ];
           then
+            echo "  setting UID to \"$${directoryUid}\"";
             chown $${directoryUid} $${directoryPath};
           fi;
           if [ ! -z $${directoryGid} ];
           then
+            echo "  setting GID to \"$${directoryGid}\"";
             chgrp $${directoryGid} $${directoryPath};
           fi;
-        done
+        done;
+        echo "Done!"
+    environment:
+      NFS_ROOT_PATH:
+      NFS_STARTUP_DIRS:
     networks:
       nfs-net:
     volumes:
