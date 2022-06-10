@@ -7,22 +7,28 @@ services:
     command:
       - >
         echo "NFS startup";
-        echo "Populating at \"$${NFS_ROOT_PATH}\"";
+        echo "";
+        echo "Populating \"$${VOL_ADDR}:/$${NFS_VOL_DEVICE}\" (mounted at: \"$${NFS_ROOT_PATH}\")";
         for directoryDefinition in $${NFS_STARTUP_DIRS};
         do
           directoryName=$$(echo "$${directoryDefinition}" | cut -d ':' -f 1);
           directoryUid=$$(echo "$${directoryDefinition}:" | cut -d ':' -f 2);
           directoryGid=$$(echo "$${directoryDefinition}:" | cut -d ':' -f 3);
           directoryPath=$${NFS_ROOT_PATH}/$${directoryName};
+          echo "";
           echo "Creating \"$${directoryName}\" ..";
           if [ -d $${directoryPath} ];
           then
             echo "  already exists!";
+            directoryExists=1;
           fi;
           mkdir -p $${directoryPath};
           if [ -d $${directoryPath} ];
           then
-            echo "  successfully created!";
+            if [ -z $${directoryExists} ];
+            then
+              echo "  successfully created!";
+            fi;
           else
             echo "  creation failed!";
           fi;
@@ -37,10 +43,13 @@ services:
             chgrp $${directoryGid} $${directoryPath};
           fi;
         done;
+        echo "";
         echo "Done!"
     environment:
       NFS_ROOT_PATH:
       NFS_STARTUP_DIRS:
+      VOL_ADDR:
+      NFS_VOL_DEVICE:
     networks:
       nfs-net:
     volumes:
@@ -70,6 +79,6 @@ volumes:
     name: ${NFS_VOL_NAME:-nfs-startup-vol}
     driver: local
     driver_opts:
-      type: ${VOL_TYPE:-nfs4}
-      o: addr=${VOL_ADDR:-127.0.0.1},${VOL_OPTS:-rw,nolock,noatime,tcp,rsize=8192,wsize=8192,timeo=14}
-      device: ${NFS_VOL_DEVICE:-:/}
+      type: ${VOL_TYPE}
+      o: addr=${VOL_ADDR},${VOL_OPTS}
+      device: ${NFS_VOL_DEVICE}
