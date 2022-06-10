@@ -7,15 +7,13 @@ services:
     command:
       - >
         echo "NFS startup";
-        echo "";
-        echo "Populating \"$${VOL_ADDR}:/$${NFS_VOL_DEVICE}\" (mounted at: \"$${NFS_ROOT_PATH}\")";
+        echo "Populating \"$${VOL_ADDR}$${NFS_VOL_DEVICE}\" (mounted at: \"$${NFS_ROOT_PATH}\")";
         for directoryDefinition in $${NFS_STARTUP_DIRS};
         do
           directoryName=$$(echo "$${directoryDefinition}" | cut -d ':' -f 1);
           directoryUid=$$(echo "$${directoryDefinition}:" | cut -d ':' -f 2);
           directoryGid=$$(echo "$${directoryDefinition}:" | cut -d ':' -f 3);
           directoryPath=$${NFS_ROOT_PATH}/$${directoryName};
-          echo "";
           echo "Creating \"$${directoryName}\" ..";
           if [ -d $${directoryPath} ];
           then
@@ -34,16 +32,15 @@ services:
           fi;
           if [ ! -z $${directoryUid} ];
           then
-            echo "  setting UID to \"$${directoryUid}\"";
+            echo "  set UID to \"$${directoryUid}\"";
             chown $${directoryUid} $${directoryPath};
           fi;
           if [ ! -z $${directoryGid} ];
           then
-            echo "  setting GID to \"$${directoryGid}\"";
+            echo "  set GID to \"$${directoryGid}\"";
             chgrp $${directoryGid} $${directoryPath};
           fi;
         done;
-        echo "";
         echo "Done!"
     environment:
       NFS_ROOT_PATH:
