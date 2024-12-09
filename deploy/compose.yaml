@@ -1,0 +1,40 @@
+services:
+  nfs-startup:
+    image: ${IMAGE_NAME:-pedroetb/nfs-startup}:${IMAGE_TAG:-latest}
+    environment:
+      NFS_ROOT_PATH:
+      NFS_STARTUP_DIRS:
+      VOL_ADDR:
+      NFS_VOL_DEVICE:
+    networks:
+      nfs-net:
+    volumes:
+      - nfs-vol:${NFS_ROOT_PATH}
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: ${RESTART_DELAY:-10s}
+      resources:
+        limits:
+          cpus: '${RESOURCES_LIMITS_CPUS:-0.1}'
+          memory: ${RESOURCES_LIMITS_MEMORY:-16M}
+        reservations:
+          cpus: '${RESOURCES_RESERVATIONS_CPUS:-0.001}'
+          memory: ${RESOURCES_RESERVATIONS_MEMORY:-6M}
+
+networks:
+  nfs-net:
+    name: ${NFS_NET_NAME:-nfs-net}
+    driver: ${NFS_NET_DRIVER:-overlay}
+    attachable: ${NFS_NET_ATTACHABLE:-true}
+
+volumes:
+  nfs-vol:
+    name: ${NFS_VOL_NAME}
+    driver: ${VOL_DRIVER}
+    driver_opts:
+      type: ${VOL_TYPE}
+      o: addr=${VOL_ADDR},vers=${VOL_VERS},${VOL_OPTS}
+      device: :${VOL_DEVICE_PREFIX}${NFS_VOL_DEVICE}
